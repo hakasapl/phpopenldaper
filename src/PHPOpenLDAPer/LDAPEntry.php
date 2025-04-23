@@ -106,14 +106,13 @@ class LDAPEntry
         }
         $errno = ldap_errno($this->conn);
         if ($errno != 0){
-            $errMsg = ldap_error($this->conn);
             $diagMsg = "";
             ldap_get_option($this->conn, LDAP_OPT_DIAGNOSTIC_MESSAGE, $diagMsg);
             $wholeMsg = "LDAP error!\n" . json_encode(
                 [
                     "func" => $funcName,
                     "mods" => $this->mods,
-                    "ldap_error" => $errMsg,
+                    "ldap_error" => ldap_error($this->conn),
                     "LDAP_OPT_DIAGNOSTIC_MESSAGE" => $diagMsg,
                     "errno" => $errno,
                 ],
