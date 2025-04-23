@@ -89,6 +89,18 @@ class LDAPEntry
         return !is_null($this->object);
     }
 
+    private function getLdapErrorInfo()
+    {
+        $diagMsg = "";
+        ldap_get_option($this->conn, LDAP_OPT_DIAGNOSTIC_MESSAGE, $diagMsg);
+        return [
+            "ldap_error" => ldap_error($this->conn),
+            "LDAP_OPT_DIAGNOSTIC_MESSAGE" => $diagMsg,
+            "errno" => ldap_errno($this->conn),
+            "error_get_last" => error_get_last()
+        ];
+    }
+
   /**
    * Writes changes set in $mods array to the LDAP entry on the server.
    *
@@ -107,22 +119,11 @@ class LDAPEntry
             $funcName = "ldap_mod_replace";
             ldap_mod_replace($this->conn, $this->dn, $this->mods);
         }
-        $errno = ldap_errno($this->conn);
-        if ($errno != 0){
-            $diagMsg = "";
-            ldap_get_option($this->conn, LDAP_OPT_DIAGNOSTIC_MESSAGE, $diagMsg);
-            $wholeMsg = "LDAP error!\n" . json_encode(
-                [
-                    "func" => $funcName,
-                    "mods" => $this->mods,
-                    "ldap_error" => ldap_error($this->conn),
-                    "LDAP_OPT_DIAGNOSTIC_MESSAGE" => $diagMsg,
-                    "errno" => $errno,
-                    "error_get_last" => error_get_last()
-                ],
-                JSON_PRETTY_PRINT
-            );
-            throw new RuntimeException($wholeMsg);
+        $errorInfo = $this->getLdapErrorInfo();
+        if ($errorInfo["errno"] != 0) {
+            $errorInfo["func"] = $funcName;
+            $errorInfo["mods"] = $this->mods;
+            throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo, JSON_PRETTY_PRINT));
         }
         $this->pullObject();  // Refresh $object array
         $this->mods = null;  // Reset Modifications Array to Null
@@ -131,20 +132,18 @@ class LDAPEntry
   /**
    * Deletes the entry (no need to call write())
    *
-   * @return bool True on success, False on failure
+   * @return void
+   * @throws RuntimeException if ldap_delete fails
    */
     public function delete()
     {
         if ($this->object == null) {
-            return true;
-        } else {
-            if (ldap_delete($this->conn, $this->dn)) {
-                $this->pullObject();
-                $this->mods = null;
-                return true;
-            } else {
-                return false;
-            }
+            return;
+        }
+        ldap_delete($this->conn, $this->dn);
+        $errorInfo = $this->getLdapErrorInfo();
+        if ($errorInfo["errno"] != 0) {
+            throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo, JSON_PRETTY_PRINT));
         }
     }
 
