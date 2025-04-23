@@ -40,6 +40,7 @@ class LDAPEntry
     {
         $result = @ldap_read($this->conn, $this->dn, "(objectclass=*)");
         if ($result === false) {
+            $this->object = null;
             return false;
         }
         $search = @ldap_get_entries($this->conn, $result);
