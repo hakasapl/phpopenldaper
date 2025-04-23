@@ -85,6 +85,7 @@ class LDAPEntry
     {
         return !is_null($this->object);
     }
+
   /**
    * Writes changes set in $mods array to the LDAP entry on the server.
    *
