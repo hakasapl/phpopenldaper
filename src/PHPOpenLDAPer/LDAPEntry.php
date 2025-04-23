@@ -115,6 +115,7 @@ class LDAPEntry
                     "ldap_error" => ldap_error($this->conn),
                     "LDAP_OPT_DIAGNOSTIC_MESSAGE" => $diagMsg,
                     "errno" => $errno,
+                    "error_get_last" => error_get_last()
                 ],
                 JSON_PRETTY_PRINT
             );
