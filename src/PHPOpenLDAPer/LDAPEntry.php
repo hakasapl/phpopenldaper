@@ -2,6 +2,8 @@
 
 namespace PHPOpenLDAPer;
 
+use RuntimeException;
+
 /**
  * Class that represents one entry in an LDAP server
  * This class is not meant to be constructed outside the ldapConn class
