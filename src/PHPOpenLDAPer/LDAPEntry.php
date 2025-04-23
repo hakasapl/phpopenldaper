@@ -90,25 +90,40 @@ class LDAPEntry
   /**
    * Writes changes set in $mods array to the LDAP entry on the server.
    *
-   * @return bool True on success, False on failure
+   * @return void
+   * @throws RuntimeException if ldap_add / ldap_mod_replace fails
    */
     public function write()
     {
+        if ($this->mods == null) {
+            return;
+        }
         if ($this->object == null) {
-            $success = ldap_add($this->conn, $this->dn, $this->mods);  // Create a New Entry
+            $funcName = "ldap_add";
+            ldap_add($this->conn, $this->dn, $this->mods);
         } else {
-            if ($this->mods == null) {
-                return true;
-            } else {
-                $success = ldap_mod_replace($this->conn, $this->dn, $this->mods);  // Modify Existing Entry
-            }
+            $funcName = "ldap_mod_replace";
+            ldap_mod_replace($this->conn, $this->dn, $this->mods);
         }
-
-        if ($success) {
-            $this->pullObject();  // Refresh $object array
-            $this->mods = null;  // Reset Modifications Array to Null
+        $errno = ldap_errno($this->conn);
+        if ($errno != 0){
+            $diagMsg = "";
+            ldap_get_option($this->conn, LDAP_OPT_DIAGNOSTIC_MESSAGE, $diagMsg);
+            $wholeMsg = "LDAP error!\n" . json_encode(
+                [
+                    "func" => $funcName,
+                    "mods" => $this->mods,
+                    "ldap_error" => ldap_error($this->conn),
+                    "LDAP_OPT_DIAGNOSTIC_MESSAGE" => $diagMsg,
+                    "errno" => $errno,
+                    "error_get_last" => error_get_last()
+                ],
+                JSON_PRETTY_PRINT
+            );
+            throw new RuntimeException($wholeMsg);
         }
-        return $success;
+        $this->pullObject();  // Refresh $object array
+        $this->mods = null;  // Reset Modifications Array to Null
     }
 
   /**
