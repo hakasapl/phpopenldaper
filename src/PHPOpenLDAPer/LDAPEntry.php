@@ -92,7 +92,7 @@ class LDAPEntry
    * @return void
    * @throws RuntimeException if ldap_add / ldap_mod_replace fails
    */
-    public function write(): void
+    public function write()
     {
         if ($this->mods == null) {
             return;
