@@ -97,7 +97,6 @@ class LDAPEntry
         if ($this->mods == null) {
             return;
         }
-        $modsStr = json_encode($this->mods);
         if ($this->object == null) {
             $funcName = "ldap_add";
             ldap_add($this->conn, $this->dn, $this->mods);
