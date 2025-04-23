@@ -119,7 +119,7 @@ class LDAPEntry
             ldap_mod_replace($this->conn, $this->dn, $this->mods);
         }
         $errorInfo = $this->getLdapErrorInfo();
-        if (intval($errorInfo["errno"]) != 0) {
+        if ($errorInfo["errno"] != 0) {
             $errorInfo["func"] = $funcName;
             $errorInfo["mods"] = $this->mods;
             throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo, JSON_PRETTY_PRINT));
@@ -141,7 +141,7 @@ class LDAPEntry
         }
         ldap_delete($this->conn, $this->dn);
         $errorInfo = $this->getLdapErrorInfo();
-        if (intval($errorInfo["errno"]) != 0) {
+        if ($errorInfo["errno"] != 0) {
             throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo, JSON_PRETTY_PRINT));
         }
     }
