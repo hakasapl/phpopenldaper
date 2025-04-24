@@ -144,6 +144,7 @@ class LDAPEntry
         if ($errorInfo["ldap_errno"] != 0) {
             throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo, JSON_PRETTY_PRINT));
         }
+        $this->mods = null;
         $this->pullObject();
     }
 
