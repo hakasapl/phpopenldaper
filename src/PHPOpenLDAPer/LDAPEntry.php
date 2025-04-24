@@ -340,14 +340,24 @@ class LDAPEntry
     }
 
   /**
-   * Returns the entire objects attributes
+   * Returns the entire objects attributes in form suitable for setAttributes()
    *
    * @return array Array where keys are attributes
    */
     public function getAttributes()
     {
         assert ($this->exists());
-        return $this->object;
+        $output = [];
+        foreach ($this->object as $key => $val) {
+            if (preg_match("/^[0-9]+$/", $key)) {
+                continue;
+            }
+            if ($key == "dn") {
+                continue;
+            }
+            $output[$key] = $val;
+        }
+        return $output;
     }
 
   /**
