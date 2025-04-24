@@ -88,15 +88,42 @@ class LDAPEntry
         return !is_null($this->object);
     }
 
-    private function getLdapErrorInfo()
+    // controls: https://www.php.net/manual/en/ldap.controls.php
+    private function getLdapErrorInfo(\LDAP\Result|false $result, array $controls = [])
     {
+        if ($result == false) {
+            $success = false;
+            $ldap_parse_result = "cannot parse, result is false";
+        } else {
+            $error_code = null;
+            $matched_dn = null;
+            $error_message = null;
+            $referrals = null;
+            $success = ldap_parse_result(
+                $this->conn,
+                $result,
+                $error_code,
+                $matched_dn,
+                $error_message,
+                $referrals,
+                $controls
+            );
+            $ldap_parse_result = [
+                "error_code" => $error_code,
+                "matched_dn" => $matched_dn,
+                "error_message" => $error_message,
+                "referrals" => $referrals,
+            ];
+        }
         $diagMsg = "";
         ldap_get_option($this->conn, LDAP_OPT_DIAGNOSTIC_MESSAGE, $diagMsg);
         return [
+            "success" => $success,
+            "ldap_parse_result" => $ldap_parse_result,
             "ldap_error" => ldap_error($this->conn),
             "LDAP_OPT_DIAGNOSTIC_MESSAGE" => $diagMsg,
             "ldap_errno" => ldap_errno($this->conn),
-            "error_get_last" => error_get_last()
+            "error_get_last" => error_get_last(),
         ];
     }
 
@@ -112,14 +139,14 @@ class LDAPEntry
             return;
         }
         if ($this->object == null) {
-            $funcName = "ldap_add";
-            ldap_add($this->conn, $this->dn, $this->mods);
+            $funcName = "ldap_add_ext";
+            $result = ldap_add_ext($this->conn, $this->dn, $this->mods);
         } else {
-            $funcName = "ldap_mod_replace";
-            ldap_mod_replace($this->conn, $this->dn, $this->mods);
+            $funcName = "ldap_mod_replace_ext";
+            $result = ldap_mod_replace_ext($this->conn, $this->dn, $this->mods);
         }
-        $errorInfo = $this->getLdapErrorInfo();
-        if ($errorInfo["ldap_errno"] != 0) {
+        $errorInfo = $this->getLdapErrorInfo($result);
+        if (!$errorInfo["success"]) {
             $errorInfo["func"] = $funcName;
             $errorInfo["mods"] = $this->mods;
             throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo, JSON_PRETTY_PRINT));
@@ -139,9 +166,9 @@ class LDAPEntry
         if ($this->object == null) {
             return;
         }
-        ldap_delete($this->conn, $this->dn);
-        $errorInfo = $this->getLdapErrorInfo();
-        if ($errorInfo["ldap_errno"] != 0) {
+        $result = ldap_delete_ext($this->conn, $this->dn);
+        $errorInfo = $this->getLdapErrorInfo($result);
+        if (!$errorInfo["success"]) {
             throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo, JSON_PRETTY_PRINT));
         }
     }
