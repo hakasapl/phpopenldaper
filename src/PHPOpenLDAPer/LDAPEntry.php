@@ -331,9 +331,7 @@ class LDAPEntry
    */
     public function getAttribute($attr)
     {
-        if (!$this->exists()) {
-            throw new RuntimeException("nonexistent entry has no attributes");
-        }
+        assert ($this->exists());
         if (isset($this->object[$attr])) {
             return $this->object[$attr];
         } else {
@@ -348,9 +346,7 @@ class LDAPEntry
    */
     public function getAttributes()
     {
-        if (!$this->exists()) {
-            throw new RuntimeException("nonexistent entry has no attributes");
-        }
+        assert ($this->exists());
         return $this->object;
     }
 
