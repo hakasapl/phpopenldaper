@@ -331,6 +331,7 @@ class LDAPEntry
    */
     public function getAttribute($attr)
     {
+        assert ($this->exists());
         if (isset($this->object[$attr])) {
             return $this->object[$attr];
         } else {
@@ -345,6 +346,7 @@ class LDAPEntry
    */
     public function getAttributes()
     {
+        assert ($this->exists());
         $output = [];
         foreach ($this->object as $key => $val) {
             if (preg_match("/^[0-9]+$/", $key)) {
