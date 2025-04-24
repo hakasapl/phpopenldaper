@@ -331,6 +331,7 @@ class LDAPEntry
    */
     public function getAttribute($attr)
     {
+        assert ($this->exists());
         if (isset($this->object[$attr])) {
             return $this->object[$attr];
         } else {
@@ -345,6 +346,7 @@ class LDAPEntry
    */
     public function getAttributes()
     {
+        assert ($this->exists());
         return $this->object;
     }
 
