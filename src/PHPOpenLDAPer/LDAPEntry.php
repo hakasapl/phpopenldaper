@@ -37,6 +37,7 @@ class LDAPEntry
 
   /**
    * Pulls an entry from the ldap connection, and sets $object If entry does not exist, $object = null.
+   * @returns bool existence of ldap object
    */
     private function pullObject()
     {
@@ -45,17 +46,17 @@ class LDAPEntry
             $this->object = null;
             return false;
         }
-        $search = @ldap_get_entries($this->conn, $result);
-        LDAPConn::stripCount($search);
-
-        if (isset($search)) {
-          // Object Exists
-            if (count($search) > 1) {  // 1 For LDAP count element, and 1 for actual object
-                // Duplicate Objects Found
-                die("FATAL: Call to ldapObject with non-unique DN.");
-            } else {
-                $this->object = $search[0];
-            }
+        $entries = @ldap_get_entries($this->conn, $result);
+        if ($entries === false) {
+            $this->object = null;
+            return false;
+        }
+        LDAPConn::stripCount($entries);
+        if (count($entries) > 1) {
+            throw new \Exception("FATAL: Call to ldapObject with non-unique DN.");
+        } else {
+            $this->object = $entries[0];
+            return true;
         }
     }
 
