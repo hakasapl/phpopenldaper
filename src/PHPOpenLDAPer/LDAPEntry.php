@@ -347,13 +347,17 @@ class LDAPEntry
    * Returns a given attribute of the object
    *
    * @param string $attr Attribute key value to return
-   * @return array value of requested attribute. Note: lots of attributes are arrays by default, so you have to use index 0 of the return value to get a single value
+   * @return array value of requested attribute.
    */
     public function getAttribute($attr)
     {
         assert ($this->exists());
         if (isset($this->object[$attr])) {
-            return $this->object[$attr];
+            if (is_array($this->object[$attr])) {
+                return $this->object[$attr];
+            } else {
+                return [$this->object[$attr]];
+            }
         } else {
             return [];
         }
