@@ -333,7 +333,11 @@ class LDAPEntry
     {
         assert ($this->exists());
         if (isset($this->object[$attr])) {
-            return $this->object[$attr];
+            if (is_array($this->object[$attr])) {
+                return $this->object[$attr];
+            } else {
+                return [$this->object[$attr]];
+            }
         } else {
             return [];
         }
