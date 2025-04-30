@@ -2,6 +2,8 @@
 
 namespace PHPOpenLDAPer;
 
+use RuntimeException;
+
 /**
  * Class that represents one entry in an LDAP server
  * This class is not meant to be constructed outside the ldapConn class
@@ -86,48 +88,64 @@ class LDAPEntry
         return !is_null($this->object);
     }
 
+    private function getLdapErrorInfo()
+    {
+        $diagMsg = "";
+        ldap_get_option($this->conn, LDAP_OPT_DIAGNOSTIC_MESSAGE, $diagMsg);
+        return [
+            "ldap_error" => ldap_error($this->conn),
+            "LDAP_OPT_DIAGNOSTIC_MESSAGE" => $diagMsg,
+            "ldap_errno" => ldap_errno($this->conn),
+            "error_get_last" => error_get_last()
+        ];
+    }
+
   /**
    * Writes changes set in $mods array to the LDAP entry on the server.
    *
-   * @return bool True on success, False on failure
+   * @return void
+   * @throws RuntimeException if ldap_add / ldap_mod_replace fails
    */
     public function write()
     {
+        if ($this->mods == null) {
+            return;
+        }
         if ($this->object == null) {
-            $success = ldap_add($this->conn, $this->dn, $this->mods);  // Create a New Entry
+            $funcName = "ldap_add";
+            ldap_add($this->conn, $this->dn, $this->mods);
         } else {
-            if ($this->mods == null) {
-                return true;
-            } else {
-                $success = ldap_mod_replace($this->conn, $this->dn, $this->mods);  // Modify Existing Entry
-            }
+            $funcName = "ldap_mod_replace";
+            ldap_mod_replace($this->conn, $this->dn, $this->mods);
         }
-
-        if ($success) {
-            $this->pullObject();  // Refresh $object array
-            $this->mods = null;  // Reset Modifications Array to Null
+        $errorInfo = $this->getLdapErrorInfo();
+        if ($errorInfo["ldap_errno"] != 0) {
+            $errorInfo["func"] = $funcName;
+            $errorInfo["mods"] = $this->mods;
+            throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo, JSON_PRETTY_PRINT));
         }
-        return $success;
+        $this->pullObject();  // Refresh $object array
+        $this->mods = null;  // Reset Modifications Array to Null
     }
 
   /**
    * Deletes the entry (no need to call write())
    *
-   * @return bool True on success, False on failure
+   * @return void
+   * @throws RuntimeException if ldap_delete fails
    */
     public function delete()
     {
         if ($this->object == null) {
-            return true;
-        } else {
-            if (ldap_delete($this->conn, $this->dn)) {
-                $this->pullObject();
-                $this->mods = null;
-                return true;
-            } else {
-                return false;
-            }
+            return;
         }
+        ldap_delete($this->conn, $this->dn);
+        $errorInfo = $this->getLdapErrorInfo();
+        if ($errorInfo["ldap_errno"] != 0) {
+            throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo, JSON_PRETTY_PRINT));
+        }
+        $this->mods = null;
+        $this->pullObject();
     }
 
   /**
