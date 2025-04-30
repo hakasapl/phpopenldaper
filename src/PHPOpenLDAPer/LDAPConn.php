@@ -14,6 +14,7 @@ namespace PHPOpenLDAPer;
 class LDAPConn
 {
     protected $conn;  // LDAP link
+    private $entries = [];
 
   /**
    * Constructor, starts an ldap connection and binds to a DN
@@ -67,14 +68,20 @@ class LDAPConn
     }
 
   /**
-   * Gets a single entry from the LDAP server
+   * Gets a single entry from the LDAP server. If multiple calls are made for the same DN,
+   * subsequent calls will return the same object as the first call.
    *
    * @param string $dn Distinguished name (DN) of requested entry
    * @return ldapEntry requested entry object
    */
-    public function getEntry($dn)
+    public function getEntry(string $dn): LDAPEntry
     {
-        return new LDAPEntry($this->conn, $dn);
+        if (array_key_exists($dn, $this->entries)) {
+            return $this->entries[$dn];
+        }
+        $entry = new LDAPEntry($this->getConn(), $dn);
+        $this->entries[$dn] = $entry;
+        return $entry;
     }
 
   /**
