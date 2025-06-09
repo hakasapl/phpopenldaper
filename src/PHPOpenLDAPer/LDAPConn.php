@@ -46,14 +46,15 @@ class LDAPConn
    *
    * @param string $filter LDAP_search filter
    * @param string $base Search base
+   * @param array $attributes Requested attributes. Use `[]` to request all attributes.
    * @return array Array of ldapEntry objects
    */
-    public function search($filter, $base, $recursive = true)
+    public function search($filter, $base, $attributes, $recursive = true)
     {
         if ($recursive) {
-            $search = ldap_search($this->conn, $base, $filter);
+            $search = ldap_search($this->conn, $base, $filter, $attributes);
         } else {
-            $search = ldap_list($this->conn, $base, $filter);
+            $search = ldap_list($this->conn, $base, $filter, $attributes);
         }
 
         $search_entries = @ldap_get_entries($this->conn, $search);
