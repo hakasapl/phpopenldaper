@@ -181,16 +181,17 @@ class LDAPEntry
   /**
    * Gets an array of children of the entry
    *
+   * @param array $attributes Requested attributes. Use `[]` to fetch all attributes.
    * @param boolean $recursive (optional) If true, recursive search. Default is false.
    * @param string $filter (optional) Filter matching LDAP search filter syntax
    * @return array Array of children entries
    */
-    public function getChildrenArray($recursive = false, $filter = "(objectclass=*)")
+    public function getChildrenArray($attributes, $recursive = false, $filter = "(objectclass=*)")
     {
         if ($recursive) {
-            $search = ldap_search($this->conn, $this->dn, $filter);
+            $search = ldap_search($this->conn, $this->dn, $filter, $attributes);
         } else {
-            $search = ldap_list($this->conn, $this->dn, $filter);
+            $search = ldap_list($this->conn, $this->dn, $filter, $attributes);
         }
 
         $search_entries = @ldap_get_entries($this->conn, $search);
@@ -212,7 +213,7 @@ class LDAPEntry
    */
     public function getChildren($recursive = false, $filter = "(objectclass=*)")
     {
-        $children_array = $this->getChildrenArray($recursive, $filter);
+        $children_array = $this->getChildrenArray(["dn"], $recursive, $filter);
 
         $output = array();
         foreach ($children_array as $child) {
