@@ -94,7 +94,7 @@ class LDAPConn
    *
    * @param string $dn Distinguished name (DN) of requested entry
    * @param string $objectClass_class Name of a PHP class that represents an LDAP objectClass
-   * and extends LDAPEntry (see GenericObjectClass for an example)
+   * and extends LDAPEntry (see ObjectClass or GenericObjectClass for an example)
    * @return $objectClass_class requested objectClass object
    */
     public function getEntryOfObjectClass(string $dn, string $objectClass_class)
