@@ -2,6 +2,8 @@
 
 namespace PHPOpenLDAPer;
 
+use InvalidArgumentException;
+
 /**
  * Class that represents a connection to an LDAP server
  *
@@ -81,6 +83,36 @@ class LDAPConn
             return $this->entries[$dn];
         }
         $entry = new LDAPEntry($this->getConn(), $dn);
+        $this->entries[$dn] = $entry;
+        return $entry;
+    }
+
+
+  /**
+   * Gets a single entry from the LDAP server. If multiple calls are made for the same DN,
+   * subsequent calls will return the same object as the first call.
+   *
+   * @param string $dn Distinguished name (DN) of requested entry
+   * @param string $objectClass_class Name of a PHP class that represents an LDAP objectClass
+   * and extends LDAPEntry (see GenericObjectClass for an example)
+   * @return $objectClass_class requested objectClass object
+   */
+    public function getEntryOfObjectClass(string $dn, string $objectClass_class)
+    {
+        if (!is_subclass_of($objectClass_class, LDAPEntry::class)) {
+            throw new InvalidArgumentException("'$objectClass_class' does not extend LDAPEntry.");
+        }
+        if (array_key_exists($dn, $this->entries)) {
+            $entry = $this->entries[$dn];
+            if (!is_a($entry, $objectClass_class)) {
+                $found_class_name = get_class($entry);
+                throw new InvalidArgumentException(
+                    "requested class is '$objectClass_class', but another entry for dn='$dn' already exists of class '$found_class_name'"
+                );
+            }
+            return $entry;
+        }
+        $entry = new $objectClass_class($this->getConn(), $dn);
         $this->entries[$dn] = $entry;
         return $entry;
     }
