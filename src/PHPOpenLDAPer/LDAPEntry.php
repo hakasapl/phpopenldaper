@@ -352,7 +352,9 @@ class LDAPEntry
    */
     public function getAttribute($attr)
     {
-        assert ($this->exists());
+        if (!$this->exists()) {
+            throw new RuntimeException("entry '" . self::ldap_unescape($this->dn) . "' does not exist!");
+        }
         if (isset($this->object[$attr])) {
             if (is_array($this->object[$attr])) {
                 return $this->object[$attr];
@@ -371,7 +373,9 @@ class LDAPEntry
    */
     public function getAttributes()
     {
-        assert ($this->exists());
+        if (!$this->exists()) {
+            throw new RuntimeException("entry '" . self::ldap_unescape($this->dn) . "' does not exist!");
+        }
         $output = [];
         foreach ($this->object as $key => $val) {
             if (preg_match("/^[0-9]+$/", $key)) {
@@ -420,5 +424,13 @@ class LDAPEntry
     public function pendingChanges()
     {
         return !is_null($this->mods);
+    }
+
+    public static function ldap_unescape($string) {
+        return preg_replace_callback(
+            "/\\\\[\da-z]{2}/",
+            fn ($x) => hex2bin(substr(array_shift($x), 1)),
+            $string
+        );
     }
 }
