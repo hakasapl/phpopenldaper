@@ -354,11 +354,7 @@ class LDAPEntry
     {
         assert ($this->exists());
         if (isset($this->object[$attr])) {
-            if (is_array($this->object[$attr])) {
-                return $this->object[$attr];
-            } else {
-                return [$this->object[$attr]];
-            }
+            return is_array($this->object[$attr]) ? $this->object[$attr] : [$this->object[$attr]];
         } else {
             return [];
         }
@@ -377,7 +373,7 @@ class LDAPEntry
             if (preg_match("/^[0-9]+$/", $key)) {
                 continue;
             }
-            $output[$key] = $val;
+            $output[$key] = is_array($val) ? $val : [$val];
         }
         return $output;
     }
