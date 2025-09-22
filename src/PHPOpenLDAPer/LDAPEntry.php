@@ -377,9 +377,6 @@ class LDAPEntry
             if (preg_match("/^[0-9]+$/", $key)) {
                 continue;
             }
-            if ($key == "dn") {
-                continue;
-            }
             $output[$key] = $val;
         }
         return $output;
