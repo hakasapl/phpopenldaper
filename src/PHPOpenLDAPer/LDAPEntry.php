@@ -352,7 +352,9 @@ class LDAPEntry
    */
     public function getAttribute($attr)
     {
-        assert ($this->exists());
+        if (!$this->exists()) {
+            throw new RuntimeException("cannot get attribute from nonexistent entry");
+        }
         if (isset($this->object[$attr])) {
             return is_array($this->object[$attr]) ? $this->object[$attr] : [$this->object[$attr]];
         } else {
@@ -367,7 +369,9 @@ class LDAPEntry
    */
     public function getAttributes()
     {
-        assert ($this->exists());
+        if (!$this->exists()) {
+            throw new RuntimeException("cannot get attributes from nonexistent entry");
+        }
         $output = [];
         foreach ($this->object as $key => $val) {
             if (preg_match("/^[0-9]+$/", $key)) {
