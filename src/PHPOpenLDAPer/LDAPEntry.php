@@ -90,6 +90,13 @@ class LDAPEntry
         return !is_null($this->object);
     }
 
+    public function ensureExists()
+    {
+        if (!$this->exists()) {
+            throw new RuntimeException("I do not exist! ($this->dn)");
+        }
+    }
+
     private function getLdapErrorInfo()
     {
         $diagMsg = "";
