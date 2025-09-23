@@ -160,7 +160,7 @@ class LDAPEntry
    *
    * @param string $destination Destination CN to move this entry
    * @return void
-   * @throws LDAPException if ldap_delete fails
+   * @throws LDAPException if ldap_rename fails
    */
     public function move($destination)
     {
