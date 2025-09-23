@@ -90,81 +90,87 @@ class LDAPEntry
         return !is_null($this->object);
     }
 
-    private function getLdapErrorInfo()
+    private function ensureLdapSuccess()
     {
-        $diagMsg = "";
-        ldap_get_option($this->conn, LDAP_OPT_DIAGNOSTIC_MESSAGE, $diagMsg);
-        return [
-            "ldap_error" => ldap_error($this->conn),
-            "LDAP_OPT_DIAGNOSTIC_MESSAGE" => $diagMsg,
-            "ldap_errno" => ldap_errno($this->conn),
-            "error_get_last" => error_get_last()
-        ];
+        $errno = ldap_errno($this->conn);
+        if ($errno != 0) {
+            $diagMsg = "";
+            ldap_get_option($this->conn, LDAP_OPT_DIAGNOSTIC_MESSAGE, $diagMsg);
+            throw new LDAPException(
+                json_encode(
+                    [
+                        "ldap_error" => ldap_error($this->conn),
+                        "ldap_errno" => $errno,
+                        "LDAP_OPT_DIAGNOSTIC_MESSAGE" => $diagMsg,
+                        "error_get_last" => error_get_last(),
+                        "dn" => $this->dn,
+                        "mods" => $this->mods,
+                    ]
+                )
+            );
+        }
     }
 
   /**
    * Writes changes set in $mods array to the LDAP entry on the server.
    *
    * @return void
-   * @throws RuntimeException if ldap_add / ldap_mod_replace fails
+   * @throws LDAPException if ldap_add / ldap_mod_replace fails
    */
     public function write()
     {
         if ($this->mods == null) {
             return;
         }
-        if ($this->object == null) {
-            $funcName = "ldap_add";
-            ldap_add($this->conn, $this->dn, $this->mods);
-        } else {
-            $funcName = "ldap_mod_replace";
-            ldap_mod_replace($this->conn, $this->dn, $this->mods);
+        try {
+            if ($this->object == null) {
+                ldap_add($this->conn, $this->dn, $this->mods);
+            } else {
+                ldap_mod_replace($this->conn, $this->dn, $this->mods);
+            }
+            $this->ensureLdapSuccess();
+        } finally {
+            $this->pullObject();  // Refresh $object array
+            $this->mods = null;  // Reset Modifications Array to Null
         }
-        $errorInfo = $this->getLdapErrorInfo();
-        if ($errorInfo["ldap_errno"] != 0) {
-            $errorInfo["func"] = $funcName;
-            $errorInfo["mods"] = $this->mods;
-            throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo));
-        }
-        $this->pullObject();  // Refresh $object array
-        $this->mods = null;  // Reset Modifications Array to Null
     }
 
   /**
    * Deletes the entry (no need to call write())
    *
    * @return void
-   * @throws RuntimeException if ldap_delete fails
+   * @throws LDAPException if ldap_delete fails
    */
     public function delete()
     {
         if ($this->object == null) {
             return;
         }
-        ldap_delete($this->conn, $this->dn);
-        $errorInfo = $this->getLdapErrorInfo();
-        if ($errorInfo["ldap_errno"] != 0) {
-            throw new RuntimeException("LDAP error!\n" . json_encode($errorInfo));
+        try {
+            ldap_delete($this->conn, $this->dn);
+            $this->ensureLdapSuccess();
+        } finally {
+            $this->mods = null;
+            $this->pullObject();
         }
-        $this->mods = null;
-        $this->pullObject();
     }
 
   /**
    * Moves the entry to a new location
    *
    * @param string $destination Destination CN to move this entry
-   * @return mixed ldapEntry of the new entry if successful, false on failure
+   * @return void
+   * @throws LDAPException if ldap_delete fails
    */
     public function move($destination)
     {
         $newRDN = substr($destination, 0, strpos($destination, ','));
         $newParent = substr($destination, strpos($destination, ',') + 1);
-        if (ldap_rename($this->conn, $this->dn, $newRDN, $newParent, true)) {
+        try {
+            ldap_rename($this->conn, $this->dn, $newRDN, $newParent, true);
+            $this->ensureLdapSuccess();
+        } finally {
             $this->pullObject();  // Refresh the existing entry
-            return new LDAPEntry($this->conn, $destination);
-        } else {
-            return false;
         }
     }
 
