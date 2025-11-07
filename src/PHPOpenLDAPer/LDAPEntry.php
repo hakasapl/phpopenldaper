@@ -250,7 +250,7 @@ class LDAPEntry
    */
     public function hasChildren()
     {
-        return count($this->getChildrenArray()) > 0;
+        return count($this->getChildrenArray([])) > 0;
     }
 
   /**
@@ -261,7 +261,7 @@ class LDAPEntry
    */
     public function numChildren($recursive = false)
     {
-        return count($this->getChildrenArray($recursive));
+        return count($this->getChildrenArray([], $recursive));
     }
 
   /**
