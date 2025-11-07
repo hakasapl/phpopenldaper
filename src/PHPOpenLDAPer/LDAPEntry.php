@@ -16,19 +16,16 @@ use RuntimeException;
  */
 class LDAPEntry
 {
-    private $conn;  // LDAP connection link
-    private $dn;  // Distinguished Name of the Entry
+    private \LDAP\Connection $conn;  // LDAP connection link
+    private string $dn;  // Distinguished Name of the Entry
 
-    private $object;  // Array containing the attributes of the entry as it looks on the server
-    private $mods;  // Array containing modifications to $object array that have yet to be applied
+    private ?array $object;  // Array containing the attributes of the entry as it looks on the server
+    private ?array $mods;  // Array containing modifications to $object array that have yet to be applied
 
   /**
    * Constructor that creates an ldapEntry object
-   *
-   * @param link_identifier $conn LDAP connection link from ldap_connect, ldap_bind must have already been used
-   * @param string $dn Distinguished Name of the requested entry
    */
-    public function __construct($conn, $dn)
+    public function __construct(\LDAP\Connection $conn, string $dn)
     {
         $this->conn = $conn;
         $this->dn = $dn;
@@ -39,7 +36,7 @@ class LDAPEntry
    * Pulls an entry from the ldap connection, and sets $object If entry does not exist, $object = null.
    * @returns bool existence of ldap object
    */
-    private function pullObject()
+    private function pullObject(): bool
     {
         $result = @ldap_read($this->conn, $this->dn, "(objectclass=*)");
         if ($result === false) {
@@ -65,7 +62,7 @@ class LDAPEntry
    *
    * @return string DN of the entry
    */
-    public function getDN()
+    public function getDN(): string
     {
         return $this->dn;
     }
@@ -75,7 +72,7 @@ class LDAPEntry
    *
    * @return string RDN of the entry
    */
-    public function getRDN()
+    public function getRDN(): string
     {
         return substr($this->dn, 0, strpos($this->dn, ','));
     }
@@ -85,19 +82,19 @@ class LDAPEntry
    *
    * @return bool True if entry exists, False if it does not exist
    */
-    public function exists()
+    public function exists(): bool
     {
         return !is_null($this->object);
     }
 
-    public function ensureExists()
+    public function ensureExists(): void
     {
         if (!$this->exists()) {
             throw new RuntimeException("I do not exist! ($this->dn)");
         }
     }
 
-    private function getLdapErrorInfo()
+    private function getLdapErrorInfo(): array
     {
         $diagMsg = "";
         ldap_get_option($this->conn, LDAP_OPT_DIAGNOSTIC_MESSAGE, $diagMsg);
@@ -115,7 +112,7 @@ class LDAPEntry
    * @return void
    * @throws RuntimeException if ldap_add / ldap_mod_replace fails
    */
-    public function write()
+    public function write(): void
     {
         if ($this->mods == null) {
             return;
@@ -144,7 +141,7 @@ class LDAPEntry
    * @return void
    * @throws RuntimeException if ldap_delete fails
    */
-    public function delete()
+    public function delete(): void
     {
         if ($this->object == null) {
             return;
@@ -165,7 +162,7 @@ class LDAPEntry
    * @param string $destination Destination CN to move this entry
    * @return mixed ldapEntry of the new entry if successful, false on failure
    */
-    public function move($destination)
+    public function move(string $destination): bool|LDAPEntry
     {
         $newRDN = substr($destination, 0, strpos($destination, ','));
         $newParent = substr($destination, strpos($destination, ',') + 1);
@@ -182,7 +179,7 @@ class LDAPEntry
    *
    * @return ldapEntry The parent of the current Entry
    */
-    public function getParent()
+    public function getParent(): LDAPEntry
     {
         return new LDAPEntry($this->conn, substr($this->dn, strpos($this->dn, ',') + 1)); //TODO edge case for parent being non-existent (part of base dn)
     }
@@ -195,7 +192,7 @@ class LDAPEntry
    * @param string $filter (optional) Filter matching LDAP search filter syntax
    * @return array Array of children entries
    */
-    public function getChildrenArray($attributes, $recursive = false, $filter = "(objectclass=*)")
+    public function getChildrenArray(array $attributes, bool $recursive = false, string $filter = "(objectclass=*)"): array|bool
     {
         if ($recursive) {
             $search = ldap_search($this->conn, $this->dn, $filter, $attributes);
@@ -220,7 +217,7 @@ class LDAPEntry
    * @param string $filter (optional) Filter matching LDAP search filter syntax
    * @return array Array of children ldapEntry objects
    */
-    public function getChildren($recursive = false, $filter = "(objectclass=*)")
+    public function getChildren(bool $recursive = false, string $filter = "(objectclass=*)"): array
     {
         $children_array = $this->getChildrenArray(["dn"], $recursive, $filter);
 
@@ -238,7 +235,7 @@ class LDAPEntry
    * @param string $rdn RDN of requested child
    * @return ldapEntry object of the child
    */
-    public function getChild($rdn)
+    public function getChild(string $rdn): LDAPEntry
     {
         return new LDAPEntry($this->conn, $rdn . "," . $this->dn);
     }
@@ -248,7 +245,7 @@ class LDAPEntry
    *
    * @return boolean True if yes, False if no
    */
-    public function hasChildren()
+    public function hasChildren(): bool
     {
         return count($this->getChildrenArray([])) > 0;
     }
@@ -259,7 +256,7 @@ class LDAPEntry
    * @param boolean $recursive (optional) If true, recursive search. Default is false.
    * @return int Number of children of entry
    */
-    public function numChildren($recursive = false)
+    public function numChildren(bool $recursive = false): int
     {
         return count($this->getChildrenArray([], $recursive));
     }
@@ -270,7 +267,7 @@ class LDAPEntry
    * @param string $attr Attribute Key Name to modify
    * @param mixed $value array or string value to set the attribute value to
    */
-    public function setAttribute($attr, $value)
+    public function setAttribute(string $attr, mixed $value): void
     {
         if (is_array($value)) {
             $this->mods[$attr] = $value;
@@ -285,7 +282,7 @@ class LDAPEntry
    * @param string $attr Attribute Key Name to modify
    * @param mixed $value array or string value to append attribute
    */
-    public function appendAttribute($attr, $value)
+    public function appendAttribute(string $attr, mixed $value): void
     {
         $objArr = array();
         if (isset($this->object[$attr])) {
@@ -309,7 +306,7 @@ class LDAPEntry
    *
    * @param array $arr Array of keys and attributes. Key values must be attribute key
    */
-    public function setAttributes($arr)
+    public function setAttributes(array $arr): void
     {
         $this->mods = $arr;
     }
@@ -319,7 +316,7 @@ class LDAPEntry
    *
    * @param array $arr Array of keys and attributes. Key values must be attribute key
    */
-    public function appendAttributes($arr)
+    public function appendAttributes(array $arr): void
     {
         foreach ($arr as $attr) {
             $this->appendAttribute(key($attr), $attr);
@@ -331,7 +328,7 @@ class LDAPEntry
    *
    * @param string $attr Key of attribute to be removed
    */
-    public function removeAttribute($attr, $item = null)
+    public function removeAttribute(string $attr, $item = null): void
     {
         $this->mods[$attr] = array();
     }
@@ -342,7 +339,7 @@ class LDAPEntry
    * @param string $attr Attribute to modify
    * @param string $value Value to erase from attribute
    */
-    public function removeAttributeEntryByValue($attr, $value)
+    public function removeAttributeEntryByValue(string $attr, mixed $value): void
     {
         $arr = $this->object[$attr];
         for ($i = 0; $i < count($arr); $i++) {
@@ -359,7 +356,7 @@ class LDAPEntry
    * @param string $attr Attribute key value to return
    * @return array value of requested attribute.
    */
-    public function getAttribute($attr)
+    public function getAttribute(string $attr): mixed
     {
         if (!$this->exists()) {
             throw new RuntimeException("cannot get attribute from nonexistent entry");
@@ -376,7 +373,7 @@ class LDAPEntry
    *
    * @return array Array where keys are attributes
    */
-    public function getAttributes()
+    public function getAttributes(): array
     {
         if (!$this->exists()) {
             throw new RuntimeException("cannot get attributes from nonexistent entry");
@@ -397,7 +394,7 @@ class LDAPEntry
    * @param string $attr Attribute to check
    * @return bool true if attribute exists in entry, false otherwise
    */
-    public function hasAttribute($attr)
+    public function hasAttribute(string $attr): bool
     {
         if ($this->exists()) {
             return array_key_exists($attr, $this->object);
@@ -413,7 +410,7 @@ class LDAPEntry
    * @param string $value Value to check
    * @return bool true if value exists in attribute, false otherwise
    */
-    public function attributeValueExists($attr, $value)
+    public function attributeValueExists(string $attr, mixed $value): bool
     {
         return in_array($value, $this->getAttribute($attr));
     }
@@ -423,7 +420,7 @@ class LDAPEntry
    *
    * @return bool true is there are pending changes, false otherwise
    */
-    public function pendingChanges()
+    public function pendingChanges(): bool
     {
         return !is_null($this->mods);
     }

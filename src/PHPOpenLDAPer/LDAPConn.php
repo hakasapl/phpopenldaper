@@ -18,12 +18,8 @@ class LDAPConn
 
   /**
    * Constructor, starts an ldap connection and binds to a DN
-   *
-   * @param string $host Host ldap address of server
-   * @param string $bind_dn Admin bind dn
-   * @param string $bind_pass Admin bind pass
    */
-    public function __construct($host, $bind_dn, $bind_pass)
+    public function __construct(string $host, string $bind_dn, string $bind_pass)
     {
         $this->conn = ldap_connect($host);
 
@@ -33,8 +29,6 @@ class LDAPConn
 
   /**
    * Get the connection instance of the LDAP link
-   *
-   * @return link_identifier LDAP connection link
    */
     public function getConn()
     {
@@ -43,13 +37,8 @@ class LDAPConn
 
   /**
    * Runs a search on the LDAP server and returns entries
-   *
-   * @param string $filter LDAP_search filter
-   * @param string $base Search base
-   * @param array $attributes Requested attributes. Use `[]` to request all attributes.
-   * @return array Array of ldapEntry objects
    */
-    public function search($filter, $base, $attributes, $recursive = true)
+    public function search(string $filter, string $base, array $attributes, bool $recursive = true)
     {
         if ($recursive) {
             $search = ldap_search($this->conn, $base, $filter, $attributes);
@@ -71,9 +60,6 @@ class LDAPConn
   /**
    * Gets a single entry from the LDAP server. If multiple calls are made for the same DN,
    * subsequent calls will return the same object as the first call.
-   *
-   * @param string $dn Distinguished name (DN) of requested entry
-   * @return ldapEntry requested entry object
    */
     public function getEntry(string $dn): LDAPEntry
     {
@@ -87,8 +73,6 @@ class LDAPConn
 
   /**
    * Removes the very annoying "count" attribute that comes out of all ldap search queries (why does that exist? Every language I know can figure out the count itself)
-   *
-   * @param array $arr Array passed by reference to modify
    */
     public static function stripCount(&$arr)
     {
