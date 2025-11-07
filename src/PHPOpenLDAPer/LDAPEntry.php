@@ -3,6 +3,7 @@
 namespace PHPOpenLDAPer;
 
 use RuntimeException;
+use LDAP\Connection;
 
 /**
  * Class that represents one entry in an LDAP server
@@ -16,7 +17,7 @@ use RuntimeException;
  */
 class LDAPEntry
 {
-    private \LDAP\Connection $conn;  // LDAP connection link
+    private Connection $conn;  // LDAP connection link
     private string $dn;  // Distinguished Name of the Entry
 
     private ?array $object;  // Array containing the attributes of the entry as it looks on the server

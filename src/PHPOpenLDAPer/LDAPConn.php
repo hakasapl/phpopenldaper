@@ -1,6 +1,7 @@
 <?php
 
 namespace PHPOpenLDAPer;
+use LDAP\Connection;
 
 /**
  * Class that represents a connection to an LDAP server
@@ -13,8 +14,8 @@ namespace PHPOpenLDAPer;
  */
 class LDAPConn
 {
-    protected $conn;  // LDAP link
-    private $entries = [];
+    protected Connection $conn;  // LDAP link
+    private array $entries = [];
 
   /**
    * Constructor, starts an ldap connection and binds to a DN
