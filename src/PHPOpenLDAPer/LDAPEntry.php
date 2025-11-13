@@ -26,7 +26,7 @@ class LDAPEntry
   /**
    * Constructor that creates an ldapEntry object
    */
-    public function __construct(\LDAP\Connection $conn, string $dn)
+    public function __construct(Connection $conn, string $dn)
     {
         $this->conn = $conn;
         $this->dn = $dn;
@@ -248,7 +248,7 @@ class LDAPEntry
    */
     public function hasChildren(): bool
     {
-        return count($this->getChildrenArray([])) > 0;
+        return count($this->getChildrenArray([])) > 0; // FIXME this is fetching all attributes
     }
 
   /**
@@ -259,7 +259,7 @@ class LDAPEntry
    */
     public function numChildren(bool $recursive = false): int
     {
-        return count($this->getChildrenArray([], $recursive));
+        return count($this->getChildrenArray([], $recursive)); // FIXME this is fetching all attributes
     }
 
   /**
@@ -270,6 +270,7 @@ class LDAPEntry
    */
     public function setAttribute(string $attr, mixed $value): void
     {
+        $attr = strtolower($attr);
         if (is_array($value)) {
             $this->mods[$attr] = $value;
         } else {
@@ -285,6 +286,7 @@ class LDAPEntry
    */
     public function appendAttribute(string $attr, mixed $value): void
     {
+        $attr = strtolower($attr);
         $objArr = array();
         if (isset($this->object[$attr])) {
             $objArr = $this->object[$attr];
@@ -309,6 +311,7 @@ class LDAPEntry
    */
     public function setAttributes(array $arr): void
     {
+        $arr = array_change_key_case($arr, CASE_LOWER);
         $this->mods = $arr;
     }
 
@@ -319,8 +322,9 @@ class LDAPEntry
    */
     public function appendAttributes(array $arr): void
     {
+        $arr = array_change_key_case($arr, CASE_LOWER);
         foreach ($arr as $attr) {
-            $this->appendAttribute(key($attr), $attr);
+            $this->appendAttribute(strtolower(key($attr)), $attr);
         }
     }
 
@@ -331,6 +335,7 @@ class LDAPEntry
    */
     public function removeAttribute(string $attr, $item = null): void
     {
+        $attr = strtolower($attr);
         $this->mods[$attr] = array();
     }
 
@@ -342,6 +347,7 @@ class LDAPEntry
    */
     public function removeAttributeEntryByValue(string $attr, mixed $value): void
     {
+        $attr = strtolower($attr);
         $arr = $this->object[$attr];
         for ($i = 0; $i < count($arr); $i++) {
             if ($arr[$i] == $value) {
@@ -359,6 +365,7 @@ class LDAPEntry
    */
     public function getAttribute(string $attr): mixed
     {
+        $attr = strtolower($attr);
         if (!$this->exists()) {
             throw new RuntimeException("cannot get attribute from nonexistent entry");
         }
@@ -384,6 +391,7 @@ class LDAPEntry
             if (preg_match("/^[0-9]+$/", $key)) {
                 continue;
             }
+            $key = strtolower($key);
             $output[$key] = is_array($val) ? $val : [$val];
         }
         return $output;
@@ -397,6 +405,7 @@ class LDAPEntry
    */
     public function hasAttribute(string $attr): bool
     {
+        $attr = strtolower($attr);
         if ($this->exists()) {
             return array_key_exists($attr, $this->object);
         } else {
@@ -413,6 +422,7 @@ class LDAPEntry
    */
     public function attributeValueExists(string $attr, mixed $value): bool
     {
+        $attr = strtolower($attr);
         return in_array($value, $this->getAttribute($attr));
     }
 
