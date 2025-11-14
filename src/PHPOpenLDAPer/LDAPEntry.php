@@ -196,6 +196,7 @@ class LDAPEntry
    */
     public function getChildrenArray(array $attributes, bool $recursive = false, string $filter = "(objectclass=*)"): array|bool
     {
+        $attributes = array_map("strtolower", $attributes);
         if ($recursive) {
             $search = ldap_search($this->conn, $this->dn, $filter, $attributes);
         } else {
@@ -232,6 +233,8 @@ class LDAPEntry
         if (empty($attributes)) {
             throw new ValueError('$attributes cannot be empty. use non-strict version instead.');
         }
+        $attributes = array_map("strtolower", $attributes);
+        $default_values = array_change_key_case($default_values, CASE_LOWER);
         $attributes_require_exists = array_diff($attributes, array_keys($default_values));
         $output = $this->getChildrenArray($attributes, $recursive, $filter);
         foreach ($output as $i => $entry) {
