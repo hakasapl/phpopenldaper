@@ -2,6 +2,7 @@
 
 namespace PHPOpenLDAPer;
 
+use ValueError;
 use RuntimeException;
 use LDAP\Connection;
 
@@ -209,6 +210,47 @@ class LDAPEntry
         }
 
         return $search_entries;
+    }
+
+ /**
+   * Gets an array of children of the entry, but raises an error if expected attributes are not found
+   *
+   * @param array $attributes Requested attributes. Must have at least one element.
+   * @param boolean $recursive (optional) If true, recursive search. Default is false.
+   * @param string $filter (optional) Filter matching LDAP search filter syntax
+   * @param array $default_values Keys are attribute names and values are default values.
+   * attributes without any default value must exist in every single entry
+   * or else a @throws RuntimeException will be thrown.
+   * @return array Array of children entries
+   */
+    public function getChildrenArrayStrict(
+        array $attributes,
+        bool $recursive = false,
+        string $filter = "(objectclass=*)",
+        array $default_values = [],
+    ): array {
+        if (empty($attributes)) {
+            throw new ValueError('$attributes cannot be empty. use non-strict version instead.');
+        }
+        $attributes_require_exists = array_diff($attributes, array_keys($default_values));
+        $output = $this->getChildrenArray($attributes, $recursive, $filter);
+        foreach ($output as $i => $entry) {
+            foreach ($default_values as $attribute_name => $default_value) {
+                if (!array_key_exists($attribute_name, $entry)) {
+                    $output[$i][$attribute_name] = $default_value;
+                }
+            }
+            foreach ($attributes_require_exists as $attribute_name) {
+                if (!array_key_exists($attribute_name, $entry)) {
+                    $dn = $entry["dn"];
+                    $keys_found = jsonEncode(array_keys($entry));
+                    throw new RuntimeException(
+                        "entry '$dn' does not have attribute '$attribute_name'. found attributes: $keys_found",
+                    );
+                }
+            }
+        }
+        return $output;
     }
 
   /**
