@@ -3,6 +3,7 @@
 namespace PHPOpenLDAPer;
 
 use ValueError;
+use Exception;
 use RuntimeException;
 use LDAP\Connection;
 
@@ -32,6 +33,7 @@ class LDAPEntry
         $this->conn = $conn;
         $this->dn = $dn;
         $this->pullObject();
+        $this->mods = null;
     }
 
   /**
@@ -331,21 +333,10 @@ class LDAPEntry
     public function appendAttribute(string $attr, mixed $value): void
     {
         $attr = strtolower($attr);
-        $objArr = array();
-        if (isset($this->object[$attr])) {
-            $objArr = $this->object[$attr];
-        }
-
-        $modArr = array();
-        if (isset($this->mods[$attr])) {
-            $modArr = $this->mods[$attr];
-        }
-
-        if (is_array($value)) {
-            $this->mods[$attr] = array_merge($objArr, $modArr, $value);
-        } else {
-            $this->mods[$attr] = array_merge($objArr, $modArr, (array) $value);
-        }
+        $old_value = $this->getAttribute($attr);
+        $new_value = $old_value;
+        array_push($new_value, $value);
+        $this->mods[$attr] = $new_value;
     }
 
   /**
@@ -356,7 +347,12 @@ class LDAPEntry
     public function setAttributes(array $arr): void
     {
         $arr = array_change_key_case($arr, CASE_LOWER);
-        $this->mods = $arr;
+        foreach($arr as $key => $value) {
+            if (!is_array($value)) {
+                $arr[$key] = [$value];
+            }
+        }
+        $this->mods = array_merge($this->mods, $arr);
     }
 
   /**
@@ -392,7 +388,7 @@ class LDAPEntry
     public function removeAttributeEntryByValue(string $attr, mixed $value): void
     {
         $attr = strtolower($attr);
-        $arr = $this->object[$attr];
+        $arr = $this->getAttribute($attr);
         for ($i = 0; $i < count($arr); $i++) {
             if ($arr[$i] == $value) {
                 unset($arr[$i]);
@@ -401,23 +397,52 @@ class LDAPEntry
         $this->mods[$attr] = array_values($arr);
     }
 
+    private function coerceSingleOrMultiValued(array $value, bool $multi_valued)
+    {
+        if ($multi_valued) {
+            return $value;
+        }
+        $count = count($value);
+        if ($count == 0) {
+            return null;
+        }
+        if ($count == 1) {
+            return $value[0];
+        }
+        throw new Exception("cannot coerce array of length $count to single valued!");
+    }
+
+    private function stripDigitKeys(array $x) {
+        $output = $x;
+        foreach ($this->object as $key => $val) {
+            if (preg_match("/^[0-9]+$/", $key)) {
+                continue;
+            }
+            $key = strtolower($key);
+            $output[$key] = is_array($val) ? $val : [$val];
+        }
+        return $output;
+    }
+
   /**
    * Returns a given attribute of the object
    *
    * @param string $attr Attribute key value to return
    * @return array value of requested attribute.
    */
-    public function getAttribute(string $attr): mixed
+    public function getAttribute(string $attr, bool $multi_valued = true): mixed
     {
         $attr = strtolower($attr);
+        if (($this->mods != null) && (array_key_exists($attr, $this->mods))) {
+            return $this->coerceSingleOrMultiValued($this->mods[$attr], $multi_valued);
+        }
         if (!$this->exists()) {
-            throw new RuntimeException("cannot get attribute from nonexistent entry");
+            throw new Exception("cannot get attribute from nonexistent entry with no modifications");
         }
-        if (isset($this->object[$attr])) {
-            return is_array($this->object[$attr]) ? $this->object[$attr] : [$this->object[$attr]];
-        } else {
-            return [];
+        if (array_key_exists($attr, $this->object)) {
+            return $this->coerceSingleOrMultiValued($this->object[$attr], $multi_valued);
         }
+        return $this->coerceSingleOrMultiValued([], $multi_valued);
     }
 
   /**
@@ -427,18 +452,21 @@ class LDAPEntry
    */
     public function getAttributes(): array
     {
-        if (!$this->exists()) {
-            throw new RuntimeException("cannot get attributes from nonexistent entry");
+        $has_mods = $this->mods != null;
+        $has_object = $this->object != null;
+        if (!$has_mods && !$has_object) {
+            throw new Exception("cannot get attributes from nonexistent entry with no modifications");
         }
-        $output = [];
-        foreach ($this->object as $key => $val) {
-            if (preg_match("/^[0-9]+$/", $key)) {
-                continue;
-            }
-            $key = strtolower($key);
-            $output[$key] = is_array($val) ? $val : [$val];
+        if (!$has_mods && $has_object) {
+            return $this->stripDigitKeys($this->object);
         }
-        return $output;
+        if ($has_mods && !$has_object) {
+            return $this->mods;
+        }
+        if ($has_mods && $has_object) {
+            return array_merge($this->stripDigitKeys($this->object), $this->mods);
+        }
+        return []; // this never happens, only here to please linter
     }
 
   /**
