@@ -3,7 +3,6 @@
 namespace PHPOpenLDAPer;
 
 use ValueError;
-use Exception;
 use RuntimeException;
 use LDAP\Connection;
 
@@ -54,7 +53,7 @@ class LDAPEntry
         }
         LDAPConn::stripCount($entries);
         if (count($entries) > 1) {
-            throw new \Exception("FATAL: Call to ldapObject with non-unique DN.");
+            throw new RuntimeException("FATAL: Call to ldapObject with non-unique DN.");
         } else {
             $this->object = $entries[0];
             return true;
@@ -397,7 +396,7 @@ class LDAPEntry
         $this->mods[$attr] = array_values($arr);
     }
 
-    private function coerceSingleOrMultiValued(array $value, bool $multi_valued)
+    private function convertSingleOrMultiValued(array $value, bool $multi_valued)
     {
         if ($multi_valued) {
             return $value;
@@ -409,7 +408,7 @@ class LDAPEntry
         if ($count == 1) {
             return $value[0];
         }
-        throw new Exception("cannot coerce array of length $count to single valued!");
+        throw new ValueError("cannot convert array of length $count to single value!");
     }
 
     private function stripDigitKeys(array $x) {
@@ -434,15 +433,17 @@ class LDAPEntry
     {
         $attr = strtolower($attr);
         if (($this->mods != null) && (array_key_exists($attr, $this->mods))) {
-            return $this->coerceSingleOrMultiValued($this->mods[$attr], $multi_valued);
+            return $this->convertSingleOrMultiValued($this->mods[$attr], $multi_valued);
         }
         if (!$this->exists()) {
-            throw new Exception("cannot get attribute from nonexistent entry with no modifications");
+            throw new RuntimeException(
+                "cannot get attribute from nonexistent entry with no modifications"
+            );
         }
         if (array_key_exists($attr, $this->object)) {
-            return $this->coerceSingleOrMultiValued($this->object[$attr], $multi_valued);
+            return $this->convertSingleOrMultiValued($this->object[$attr], $multi_valued);
         }
-        return $this->coerceSingleOrMultiValued([], $multi_valued);
+        return $this->convertSingleOrMultiValued([], $multi_valued);
     }
 
   /**
@@ -455,7 +456,9 @@ class LDAPEntry
         $has_mods = $this->mods != null;
         $has_object = $this->object != null;
         if (!$has_mods && !$has_object) {
-            throw new Exception("cannot get attributes from nonexistent entry with no modifications");
+            throw new RuntimeException(
+                "cannot get attributes from nonexistent entry with no modifications"
+            );
         }
         if (!$has_mods && $has_object) {
             return $this->stripDigitKeys($this->object);
