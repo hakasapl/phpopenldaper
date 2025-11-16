@@ -246,9 +246,8 @@ class LDAPEntry
             foreach ($attributes_require_exists as $attribute_name) {
                 if (!array_key_exists($attribute_name, $entry)) {
                     $dn = $entry["dn"];
-                    $keys_found = jsonEncode(array_keys($entry));
                     throw new RuntimeException(
-                        "entry '$dn' does not have attribute '$attribute_name'. found attributes: $keys_found",
+                        "entry '$dn' does not have attribute '$attribute_name'",
                     );
                 }
             }
