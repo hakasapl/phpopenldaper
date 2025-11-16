@@ -396,9 +396,9 @@ class LDAPEntry
         $this->mods[$attr] = array_values($arr);
     }
 
-    private function convertSingleOrMultiValued(array $value, bool $multi_valued)
+    private function convertSingleOrMultiValued(array $value, bool $single_valued)
     {
-        if ($multi_valued) {
+        if (!$single_valued) {
             return $value;
         }
         $count = count($value);
@@ -415,13 +415,14 @@ class LDAPEntry
    * Returns a given attribute of the object
    *
    * @param string $attr Attribute key value to return
+   * @param bool $single_valued Whether the attribute is single-valued
    * @return array value of requested attribute.
    */
-    public function getAttribute(string $attr, bool $multi_valued = true): mixed
+    public function getAttribute(string $attr, bool $single_valued = false): mixed
     {
         $attr = strtolower($attr);
         if (($this->mods != null) && (array_key_exists($attr, $this->mods))) {
-            return $this->convertSingleOrMultiValued($this->mods[$attr], $multi_valued);
+            return $this->convertSingleOrMultiValued($this->mods[$attr], $single_valued);
         }
         if (!$this->exists()) {
             throw new RuntimeException(
@@ -429,17 +430,18 @@ class LDAPEntry
             );
         }
         if (array_key_exists($attr, $this->object)) {
-            return $this->convertSingleOrMultiValued($this->object[$attr], $multi_valued);
+            return $this->convertSingleOrMultiValued($this->object[$attr], $single_valued);
         }
-        return $this->convertSingleOrMultiValued([], $multi_valued);
+        return $this->convertSingleOrMultiValued([], $single_valued);
     }
 
   /**
-   * Returns the entire objects attributes in array form
+   * Returns the entire objects attributes
    *
+   * @param array $single_valued_attributes list of attribute names which are single-valued
    * @return array Array where keys are attributes
    */
-    private function getAllAttributes() {
+    private function getAllAttributes(array $single_valued_attributes = []) {
         $has_mods = $this->mods != null;
         $has_object = $this->object != null;
         if (!$has_mods && !$has_object) {
@@ -462,7 +464,8 @@ class LDAPEntry
                 continue;
             }
             $key = strtolower($key);
-            $output[$key] = $val;
+            $is_single_valued = in_array($key, $single_valued_attributes);
+            $output[$key] = $this->convertSingleOrMultiValued($val, $is_single_valued);
         }
         return $output;
     }
