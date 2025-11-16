@@ -343,7 +343,7 @@ class LDAPEntry
    *
    * @param array $arr Array of keys and attributes. Key values must be attribute key
    */
-    public function setAttributes(array $arr): void
+    public function setAllAttributes(array $arr): void
     {
         $arr = array_change_key_case($arr, CASE_LOWER);
         foreach($arr as $key => $value) {
@@ -434,8 +434,12 @@ class LDAPEntry
         return $this->convertSingleOrMultiValued([], $multi_valued);
     }
 
-    private function getAttributesRaw(): array
-    {
+  /**
+   * Returns the entire objects attributes in array form
+   *
+   * @return array Array where keys are attributes
+   */
+    private function getAllAttributes() {
         $has_mods = $this->mods != null;
         $has_object = $this->object != null;
         if (!$has_mods && !$has_object) {
@@ -444,30 +448,21 @@ class LDAPEntry
             );
         }
         if (!$has_mods && $has_object) {
-            return $this->object;
+            $attributes =  $this->object;
         }
         if ($has_mods && !$has_object) {
-            return $this->mods;
+            $attributes =  $this->mods;
         }
         if ($has_mods && $has_object) {
-            return array_merge($this->object, $this->mods);
+            $attributes = array_merge($this->object, $this->mods);
         }
-        return []; // this never happens, only here to please linter
-    }
-
-  /**
-   * Returns the entire objects attributes in form suitable for setAttributes()
-   *
-   * @return array Array where keys are attributes
-   */
-    private function getAttributes() {
-        $output = $this->getAttributesRaw();
-        foreach ($this->object as $key => $val) {
+        $output = [];
+        foreach ($attributes as $key => $val) {
             if (preg_match("/^[0-9]+$/", $key)) {
                 continue;
             }
             $key = strtolower($key);
-            $output[$key] = is_array($val) ? $val : [$val];
+            $output[$key] = $val;
         }
         return $output;
     }
