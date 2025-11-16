@@ -411,18 +411,6 @@ class LDAPEntry
         throw new ValueError("cannot convert array of length $count to single value!");
     }
 
-    private function stripDigitKeys(array $x) {
-        $output = $x;
-        foreach ($this->object as $key => $val) {
-            if (preg_match("/^[0-9]+$/", $key)) {
-                continue;
-            }
-            $key = strtolower($key);
-            $output[$key] = is_array($val) ? $val : [$val];
-        }
-        return $output;
-    }
-
   /**
    * Returns a given attribute of the object
    *
@@ -446,12 +434,7 @@ class LDAPEntry
         return $this->convertSingleOrMultiValued([], $multi_valued);
     }
 
-  /**
-   * Returns the entire objects attributes in form suitable for setAttributes()
-   *
-   * @return array Array where keys are attributes
-   */
-    public function getAttributes(): array
+    private function getAttributesRaw(): array
     {
         $has_mods = $this->mods != null;
         $has_object = $this->object != null;
@@ -461,15 +444,32 @@ class LDAPEntry
             );
         }
         if (!$has_mods && $has_object) {
-            return $this->stripDigitKeys($this->object);
+            return $this->object;
         }
         if ($has_mods && !$has_object) {
             return $this->mods;
         }
         if ($has_mods && $has_object) {
-            return array_merge($this->stripDigitKeys($this->object), $this->mods);
+            return array_merge($this->object, $this->mods);
         }
         return []; // this never happens, only here to please linter
+    }
+
+  /**
+   * Returns the entire objects attributes in form suitable for setAttributes()
+   *
+   * @return array Array where keys are attributes
+   */
+    private function getAttributes() {
+        $output = $this->getAttributesRaw();
+        foreach ($this->object as $key => $val) {
+            if (preg_match("/^[0-9]+$/", $key)) {
+                continue;
+            }
+            $key = strtolower($key);
+            $output[$key] = is_array($val) ? $val : [$val];
+        }
+        return $output;
     }
 
   /**
