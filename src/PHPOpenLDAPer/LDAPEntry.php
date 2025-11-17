@@ -316,7 +316,7 @@ class LDAPEntry
     public function setAttribute(string $attr, mixed $value): void
     {
         $attr = strtolower($attr);
-        $this->mods[$attr] = $this->convertToArray($value);
+        $this->mods = [$attr => $this->convertToArray($value)];
         $this->write();
     }
 
@@ -330,7 +330,7 @@ class LDAPEntry
     {
         $attr = strtolower($attr);
         $old_value = $this->getAttribute($attr);
-        $this->mods[$attr] = array_merge($old_value, $this->convertToArray($value));
+        $this->mods = [$attr => array_merge($old_value, $this->convertToArray($value))];
         $this->write();
     }
 
@@ -368,7 +368,7 @@ class LDAPEntry
     public function removeAttribute(string $attr, $item = null): void
     {
         $attr = strtolower($attr);
-        $this->mods[$attr] = array();
+        $this->mods = [$attr => []];
         $this->write();
     }
 
@@ -387,7 +387,7 @@ class LDAPEntry
                 unset($arr[$i]);
             }
         }
-        $this->mods[$attr] = array_values($arr);
+        $this->mods = [$attr => array_values($arr)];
         $this->write();
     }
 
