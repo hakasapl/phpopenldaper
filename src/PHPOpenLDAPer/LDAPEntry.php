@@ -441,7 +441,7 @@ class LDAPEntry
    * @param array $single_valued_attributes list of attribute names which are single-valued
    * @return array Array where keys are attributes
    */
-    private function getAttributes(array $single_valued_attributes = []) {
+    public function getAttributes(array $single_valued_attributes = []) {
         $has_mods = $this->mods != null;
         $has_object = $this->object != null;
         if (!$has_mods && !$has_object) {
