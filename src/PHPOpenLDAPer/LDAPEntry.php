@@ -410,7 +410,7 @@ class LDAPEntry
     {
         $attr = strtolower($attr);
         if (!$this->exists()) {
-            throw new RuntimeException("cannot get attribute from nonexistent entry!");
+            throw new RuntimeException("cannot get attribute from nonexistent entry");
         }
         if (array_key_exists($attr, $this->object)) {
             return $this->convertToArray($this->object[$attr]);
@@ -426,7 +426,7 @@ class LDAPEntry
     public function getAttributes(): array
     {
         if (!$this->exists()) {
-            throw new RuntimeException("cannot get attributes from nonexistent entry!");
+            throw new RuntimeException("cannot get attributes from nonexistent entry");
         }
         $output = [];
         foreach ($this->object as $key => $val) {
