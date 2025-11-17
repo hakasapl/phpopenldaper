@@ -353,6 +353,8 @@ class LDAPEntry
         foreach($arr as $key => $value) {
             if (!is_array($value)) {
                 $arr[$key] = [$value];
+            } else {
+                $arr[$key] = $value;
             }
         }
         $this->mods = array_merge($this->mods, $arr);
