@@ -333,8 +333,12 @@ class LDAPEntry
     {
         $attr = strtolower($attr);
         $old_value = $this->getAttribute($attr);
-        $new_value = $old_value;
-        array_push($new_value, $value);
+        if (is_array($value)) {
+            $new_value = array_merge($old_value, $value);
+        } else {
+            $new_value = $old_value;
+            array_push($new_value, $value);
+        }
         $this->mods[$attr] = $new_value;
     }
 
