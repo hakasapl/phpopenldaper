@@ -115,7 +115,7 @@ class LDAPEntry
    * @return void
    * @throws RuntimeException if ldap_add / ldap_mod_replace fails
    */
-    public function write(): void
+    private function write(): void
     {
         if ($this->mods == null) {
             return;
@@ -317,6 +317,7 @@ class LDAPEntry
     {
         $attr = strtolower($attr);
         $this->mods[$attr] = $this->convertToArray($value);
+        $this->write();
     }
 
   /**
@@ -330,6 +331,7 @@ class LDAPEntry
         $attr = strtolower($attr);
         $old_value = $this->getAttribute($attr);
         $this->mods[$attr] = array_merge($old_value, $this->convertToArray($value));
+        $this->write();
     }
 
   /**
@@ -342,6 +344,7 @@ class LDAPEntry
         $arr = array_change_key_case($arr, CASE_LOWER);
         $arr = array_map([$this, "convertToArray"], $arr);
         $this->mods = array_merge($this->mods, $arr);
+        $this->write();
     }
 
   /**
@@ -366,6 +369,7 @@ class LDAPEntry
     {
         $attr = strtolower($attr);
         $this->mods[$attr] = array();
+        $this->write();
     }
 
   /**
@@ -384,6 +388,7 @@ class LDAPEntry
             }
         }
         $this->mods[$attr] = array_values($arr);
+        $this->write();
     }
 
     private function convertToArray(mixed $x)
@@ -404,13 +409,8 @@ class LDAPEntry
     public function getAttribute(string $attr): mixed
     {
         $attr = strtolower($attr);
-        if (($this->mods != null) && (array_key_exists($attr, $this->mods))) {
-            return $this->convertToArray($attr);
-        }
         if (!$this->exists()) {
-            throw new RuntimeException(
-                "cannot get attribute from nonexistent entry with no modifications"
-            );
+            throw new RuntimeException("cannot get attribute from nonexistent entry!");
         }
         if (array_key_exists($attr, $this->object)) {
             return $this->convertToArray($this->object[$attr]);
@@ -425,24 +425,11 @@ class LDAPEntry
    */
     public function getAttributes(): array
     {
-        $has_mods = $this->mods != null;
-        $has_object = $this->object != null;
-        if (!$has_mods && !$has_object) {
-            throw new RuntimeException(
-                "cannot get attributes from nonexistent entry with no modifications"
-            );
-        }
-        if (!$has_mods && $has_object) {
-            $attributes =  $this->object;
-        }
-        if ($has_mods && !$has_object) {
-            $attributes =  $this->mods;
-        }
-        if ($has_mods && $has_object) {
-            $attributes = array_merge($this->object, $this->mods);
+        if (!$this->exists()) {
+            throw new RuntimeException("cannot get attributes from nonexistent entry!");
         }
         $output = [];
-        foreach ($attributes as $key => $val) {
+        foreach ($this->object as $key => $val) {
             if (preg_match("/^[0-9]+$/", $key)) {
                 continue;
             }
@@ -479,15 +466,5 @@ class LDAPEntry
     {
         $attr = strtolower($attr);
         return in_array($value, $this->getAttribute($attr));
-    }
-
-  /**
-   * Check if there are pending changes
-   *
-   * @return bool true is there are pending changes, false otherwise
-   */
-    public function pendingChanges(): bool
-    {
-        return !is_null($this->mods);
     }
 }
