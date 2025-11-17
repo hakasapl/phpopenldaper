@@ -343,7 +343,7 @@ class LDAPEntry
    *
    * @param array $arr Array of keys and attributes. Key values must be attribute key
    */
-    public function setAllAttributes(array $arr): void
+    public function setAttributes(array $arr): void
     {
         $arr = array_change_key_case($arr, CASE_LOWER);
         foreach($arr as $key => $value) {
@@ -441,7 +441,7 @@ class LDAPEntry
    * @param array $single_valued_attributes list of attribute names which are single-valued
    * @return array Array where keys are attributes
    */
-    private function getAllAttributes(array $single_valued_attributes = []) {
+    private function getAttributes(array $single_valued_attributes = []) {
         $has_mods = $this->mods != null;
         $has_object = $this->object != null;
         if (!$has_mods && !$has_object) {
