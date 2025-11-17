@@ -419,11 +419,12 @@ class LDAPEntry
     }
 
   /**
-   * Returns the entire objects attributes
+   * Returns the entire objects attributes in form suitable for setAttributes()
    *
    * @return array Array where keys are attributes
    */
-    public function getAttributes() {
+    public function getAttributes(): array
+    {
         $has_mods = $this->mods != null;
         $has_object = $this->object != null;
         if (!$has_mods && !$has_object) {
