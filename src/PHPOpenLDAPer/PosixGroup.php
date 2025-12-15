@@ -42,27 +42,27 @@ class PosixGroup
         return $this->entry->exists();
     }
 
-    public function getMembers(): array
+    public function getMemberUIDs(): array
     {
         $members = $this->entry->getAttribute("memberuid");
         sort($members);
         return $members;
     }
 
-    public function addMember(string $uid): void
+    public function addMemberUID(string $uid): void
     {
         $this->entry->appendAttribute("memberuid", $uid);
         $this->entry->write();
     }
 
-    public function removeMember(string $uid): void
+    public function removeMemberUID(string $uid): void
     {
         $this->entry->removeAttributeEntryByValue("memberuid", $uid);
         $this->entry->write();
     }
 
-    public function memberExists(string $uid): bool
+    public function mermberUIDExists(string $uid): bool
     {
-        return in_array($uid, $this->getMembers());
+        return in_array($uid, $this->getMemberUIDs());
     }
 }
