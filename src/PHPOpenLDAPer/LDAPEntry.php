@@ -162,7 +162,7 @@ class LDAPEntry
    * Moves the entry to a new location
    *
    * @param string $destination Destination CN to move this entry
-   * @return mixed ldapEntry of the new entry if successful, false on failure
+   * @return bool|LDAPEntry ldapEntry of the new entry if successful, false on failure
    */
     public function move(string $destination): bool|LDAPEntry
     {
@@ -179,7 +179,7 @@ class LDAPEntry
   /**
    * Gets the immediate parent of the entry
    *
-   * @return ldapEntry The parent of the current Entry
+   * @return LDAPEntry The parent of the current Entry
    */
     public function getParent(): LDAPEntry
     {
@@ -278,7 +278,7 @@ class LDAPEntry
    * Gets a single child using RDN
    *
    * @param string $rdn RDN of requested child
-   * @return ldapEntry object of the child
+   * @return LDAPEntry object of the child
    */
     public function getChild(string $rdn): LDAPEntry
     {
