@@ -22,7 +22,6 @@ class LDAPEntry
     private string $dn;  // Distinguished Name of the Entry
 
     private ?array $object;  // Array containing the attributes of the entry as it looks on the server
-    private ?array $mods;  // Array containing modifications to $object array that have yet to be applied
 
   /**
    * Constructor that creates an ldapEntry object
@@ -32,7 +31,6 @@ class LDAPEntry
         $this->conn = $conn;
         $this->dn = $dn;
         $this->pullObject();
-        $this->mods = null;
     }
 
   /**
@@ -115,27 +113,23 @@ class LDAPEntry
    * @return void
    * @throws RuntimeException if ldap_add / ldap_mod_replace fails
    */
-    private function write(): void
+    private function write(array $mods): void
     {
-        if ($this->mods == null) {
-            return;
-        }
         if ($this->object == null) {
             $funcName = "ldap_add";
-            ldap_add($this->conn, $this->dn, $this->mods);
+            ldap_add($this->conn, $this->dn, $mods);
         } else {
             $funcName = "ldap_mod_replace";
-            ldap_mod_replace($this->conn, $this->dn, $this->mods);
+            ldap_mod_replace($this->conn, $this->dn, $mods);
         }
         $errorInfo = $this->getLdapErrorInfo();
         if ($errorInfo["ldap_errno"] != 0) {
             $errorInfo["func"] = $funcName;
-            $errorInfo["mods"] = $this->mods;
+            $errorInfo["mods"] = $mods;
             $errorInfoStr = json_encode($errorInfo, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
             throw new RuntimeException("LDAP error!\n$errorInfoStr");
         }
         $this->pullObject();  // Refresh $object array
-        $this->mods = null;  // Reset Modifications Array to Null
     }
 
   /**
@@ -155,7 +149,6 @@ class LDAPEntry
             $errorInfoStr = json_encode($errorInfo, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
             throw new RuntimeException("LDAP error!\n$errorInfoStr");
         }
-        $this->mods = null;
         $this->pullObject();
     }
 
@@ -313,11 +306,10 @@ class LDAPEntry
    * @param string $attr Attribute Key Name to modify
    * @param mixed $value array or string value to set the attribute value to
    */
-    public function setAttribute(string $attr, mixed $value): void
+    public function $(string $attr, mixed $value): void
     {
         $attr = strtolower($attr);
-        $this->mods = [$attr => $this->convertToArray($value)];
-        $this->write();
+        $this->write([$attr => $this->convertToArray($value)]);
     }
 
   /**
@@ -330,8 +322,7 @@ class LDAPEntry
     {
         $attr = strtolower($attr);
         $old_value = $this->getAttribute($attr);
-        $this->mods = [$attr => array_merge($old_value, $this->convertToArray($value))];
-        $this->write();
+        $this->write([$attr => array_merge($old_value, $this->convertToArray($value))]);
     }
 
   /**
@@ -341,10 +332,7 @@ class LDAPEntry
    */
     public function setAttributes(array $arr): void
     {
-        $arr = array_change_key_case($arr, CASE_LOWER);
-        $arr = array_map([$this, "convertToArray"], $arr);
-        $this->mods = array_merge($this->mods, $arr);
-        $this->write();
+        $this->write(array_map([$this, "convertToArray"], array_change_key_case($arr, CASE_LOWER)));
     }
 
   /**
@@ -368,8 +356,7 @@ class LDAPEntry
     public function removeAttribute(string $attr, $item = null): void
     {
         $attr = strtolower($attr);
-        $this->mods = [$attr => []];
-        $this->write();
+        $this->write([$attr => []]);
     }
 
   /**
@@ -387,8 +374,7 @@ class LDAPEntry
                 unset($arr[$i]);
             }
         }
-        $this->mods = [$attr => array_values($arr)];
-        $this->write();
+        $this->write([$attr => array_values($arr)]);
     }
 
     private function convertToArray(mixed $x)
