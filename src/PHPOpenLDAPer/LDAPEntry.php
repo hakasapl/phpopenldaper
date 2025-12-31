@@ -306,7 +306,7 @@ class LDAPEntry
    * @param string $attr Attribute Key Name to modify
    * @param mixed $value array or string value to set the attribute value to
    */
-    public function $(string $attr, mixed $value): void
+    public function setAttribute(string $attr, mixed $value): void
     {
         $attr = strtolower($attr);
         $this->write([$attr => $this->convertToArray($value)]);
