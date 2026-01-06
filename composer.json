@@ -2,7 +2,9 @@
     "name": "hakasapl/phpopenldaper",
     "type": "library",
     "description": "Wrapper for php-ldap",
-    "keywords": ["ldap"],
+    "keywords": [
+        "ldap"
+    ],
     "homepage": "https://github.com/hakasapl/phpopenldaper",
     "license": "GPL-3.0-only",
     "authors": [
@@ -12,7 +14,7 @@
         }
     ],
     "require": {
-        "php": ">=7.0.0"
+        "php": ">=8.3.0"
     },
     "autoload": {
         "psr-4": {
