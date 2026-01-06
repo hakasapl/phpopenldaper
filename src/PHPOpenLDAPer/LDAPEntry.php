@@ -326,11 +326,11 @@ class LDAPEntry
     }
 
   /**
-   * Sets and overwrites attributes based on a single array.
+   * Creates an entry with the specified attributes
    *
    * @param array $arr Array of keys and attributes. Key values must be attribute key
    */
-    public function setAttributes(array $arr): void
+    public function create(array $arr): void
     {
         $this->write(array_map([$this, "convertToArray"], array_change_key_case($arr, CASE_LOWER)));
     }
@@ -405,7 +405,7 @@ class LDAPEntry
     }
 
   /**
-   * Returns the entire objects attributes in form suitable for setAttributes()
+   * Returns the entire objects attributes
    *
    * @return array Array where keys are attributes
    */
