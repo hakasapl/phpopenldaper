@@ -309,7 +309,7 @@ class LDAPEntry
     public function setAttribute(string $attr, mixed $value): void
     {
         $attr = strtolower($attr);
-        $this->write([$attr => $this->convertToArray($value)]);
+        $this->write([$attr => (array) $value]);
     }
 
   /**
@@ -322,7 +322,7 @@ class LDAPEntry
     {
         $attr = strtolower($attr);
         $old_value = $this->getAttribute($attr);
-        $this->write([$attr => array_merge($old_value, $this->convertToArray($value))]);
+        $this->write([$attr => array_merge($old_value, (array) $value)]);
     }
 
   /**
@@ -332,7 +332,7 @@ class LDAPEntry
    */
     public function create(array $arr): void
     {
-        $this->write(array_map([$this, "convertToArray"], array_change_key_case($arr, CASE_LOWER)));
+        $this->write(array_map(fn($x) => (array) $x, array_change_key_case($arr, CASE_LOWER)));
     }
 
   /**
@@ -377,15 +377,6 @@ class LDAPEntry
         $this->write([$attr => array_values($arr)]);
     }
 
-    private function convertToArray(mixed $x)
-    {
-        if (is_array($x)) {
-            return $x;
-        } else {
-            return [$x];
-        }
-    }
-
   /**
    * Returns a given attribute of the object
    *
@@ -399,7 +390,7 @@ class LDAPEntry
             throw new RuntimeException("cannot get attribute from nonexistent entry");
         }
         if (array_key_exists($attr, $this->object)) {
-            return $this->convertToArray($this->object[$attr]);
+            return (array) $this->object[$attr];
         }
         return [];
     }
@@ -420,7 +411,7 @@ class LDAPEntry
                 continue;
             }
             $key = strtolower($key);
-            $output[$key] = $this->convertToArray($val);
+            $output[$key] = (array) $val;
         }
         return $output;
     }
