@@ -39,24 +39,24 @@ class LDAPConn
   /**
    * Runs a search on the LDAP server and returns entries
    */
-    public function search(string $filter, string $base, array $attributes, bool $recursive = true)
-    {
-        if ($recursive) {
-            $search = ldap_search($this->conn, $base, $filter, $attributes);
-        } else {
-            $search = ldap_list($this->conn, $base, $filter, $attributes);
-        }
+    // public function search(string $filter, string $base, array $attributes, bool $recursive = true)
+    // {
+    //     if ($recursive) {
+    //         $search = ldap_search($this->conn, $base, $filter, $attributes);
+    //     } else {
+    //         $search = ldap_list($this->conn, $base, $filter, $attributes);
+    //     }
 
-        $search_entries = @ldap_get_entries($this->conn, $search);
-        self::stripCount($search_entries);
+    //     $search_entries = @ldap_get_entries($this->conn, $search);
+    //     self::stripCount($search_entries);
 
-        $output = array();
-        for ($i = 0; isset($search_entries) && $i < count($search_entries); $i++) {
-            array_push($output, new LDAPEntry($this->conn, $search_entries[$i]["dn"]));
-        }
+    //     $output = array();
+    //     for ($i = 0; isset($search_entries) && $i < count($search_entries); $i++) {
+    //         array_push($output, new LDAPEntry($this->conn, $search_entries[$i]["dn"]));
+    //     }
 
-        return $output;
-    }
+    //     return $output;
+    // }
 
   /**
    * Gets a single entry from the LDAP server. If multiple calls are made for the same DN,
