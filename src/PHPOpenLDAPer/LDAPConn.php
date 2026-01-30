@@ -82,4 +82,17 @@ class LDAPConn
             array_walk($arr, [self::class, "stripCount"]);
         }
     }
+
+    /**
+     * refreshes all entries
+     * entries get stale while running test cases due to multiprocessing
+     * should not be needed in production
+     * @return void
+     */
+    private function pullEntries()
+    {
+        foreach ($this->entries as $dn => $entry) {
+            $entry->pullObject();
+        }
+    }
 }
