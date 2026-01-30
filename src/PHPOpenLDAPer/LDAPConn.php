@@ -15,7 +15,7 @@ use LDAP\Connection;
 class LDAPConn
 {
     protected Connection $conn;  // LDAP link
-    private array $entries = [];
+    protected array $entries = [];
 
   /**
    * Constructor, starts an ldap connection and binds to a DN
